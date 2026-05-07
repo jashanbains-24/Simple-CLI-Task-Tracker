@@ -1,49 +1,12 @@
 import sys
-import json
-from datetime import date
-import uuid
-
-
-class Task:
-    def __init__(self, name,due_date, priority):
-        self.id = str(uuid.uuid4())
-        self.name = name
-        self.due_date = due_date
-        self.priority = priority
-        self.created_at = str(date.today())
-        self.completed = False
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'name': self.name,
-            'due_date': self.due_date,
-            'priority': self.priority,
-            'created_at': self.created_at,
-            'completed': self.completed
-        }
-    
-    @classmethod
-    def from_dict(cls, data):
-        task = cls(data['name'], data['due_date'], data['priority'])
-        task.id = data['id']
-        task.name = data['name']
-        task.due_date = data['due_date']
-        task.priority = data['priority']
-        task.created_at = data['created_at']
-        task.completed = data['completed']
-        return task
+from task import Task
+from storage import load_tasks, save_tasks
 
 def main():
     command = sys.argv[1]
 
-    try:
-        with open('tasks.json', 'r') as file:
-            tasks = json.load(file)
-    except FileNotFoundError:
-        tasks = []
-    
-    tasks = [Task.from_dict(task) for task in tasks]
+    tasks = load_tasks()
+
     if command == 'add':
         print("Adding a new task...")
         task_name = sys.argv[2]
@@ -51,11 +14,11 @@ def main():
         due_date = input("Enter the due date of the task: ")
         new_task = Task(task_name, due_date, priority)
         tasks.append(new_task)
-        print(f"Added: {new_task.name}")
+        print(f"Added: {task_name}")
     elif command == 'list':
         print("Listing all tasks...")
         for task in tasks:
-            print(task.name + " ")
+            print(task)
     elif command == 'done':
         print("Marking task as done...")
         task_name = sys.argv[2]
@@ -63,6 +26,7 @@ def main():
             if task.name == task_name:
                 task.completed = True
                 print(f"Task '{task.name}' marked as done")
+                tasks.remove(task)
                 break
         else:
             print("Task not found")
@@ -70,10 +34,7 @@ def main():
         print("Unknown command")
     
 
-    to_write = [task.to_dict() for task in tasks]
-    with open('tasks.json', 'w') as file:
-        json.dump(to_write, file)
-
+    save_tasks(tasks)
 
 
 
